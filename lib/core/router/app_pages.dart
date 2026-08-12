@@ -1,13 +1,15 @@
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'app_routes.dart';
 import '../../features/splash/splash_screen.dart';
+import '../../features/auth/presentation/bindings/auth_binding.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/forgot_password_screen.dart';
+import '../../features/tasks/presentation/bindings/task_binding.dart';
 import '../../features/tasks/presentation/screens/task_list_screen.dart';
 
-/// Maps every AppRoutes.xxx name to its screen (and later, its Binding).
-/// This is the ONLY file that should ever construct a screen for navigation —
-/// screens navigate via Get.toNamed(AppRoutes.xxx), never by importing
-/// each other's screen classes directly.
+/// Maps every AppRoutes.xxx name to its screen and Binding.
 class AppPages {
   AppPages._();
 
@@ -19,14 +21,30 @@ class AppPages {
     GetPage(
       name: AppRoutes.login,
       page: () => const LoginScreen(),
-      // binding: AuthBinding(), // added in Step 6
+      binding: AuthBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.register,
+      page: () => const RegisterScreen(),
+      binding: AuthBinding(),
+    ),
+    GetPage(
+      name: AppRoutes.forgotPassword,
+      page: () => const ForgotPasswordScreen(),
+      binding: AuthBinding(),
     ),
     GetPage(
       name: AppRoutes.home,
       page: () => const TaskListScreen(),
-      // binding: TaskBinding(), // added in the task-management step
+      binding: TaskBinding(),
     ),
-    // register, forgotPassword, taskForm, taskDetails added as their
-    // screens are built in later steps.
+    // TODO(step-8): replace with the real TaskFormScreen (add/edit).
+    GetPage(
+      name: AppRoutes.taskForm,
+      page: () => const Scaffold(
+        body: Center(child: Text('Task form coming in the next step')),
+      ),
+      binding: TaskBinding(),
+    ),
   ];
 }

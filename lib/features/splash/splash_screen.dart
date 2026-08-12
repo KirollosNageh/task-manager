@@ -1,36 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../core/router/app_routes.dart';
+import '../auth/presentation/controllers/auth_controller.dart';
 
-/// Shown briefly on app start while we determine whether the user
-/// is already logged in. In this step it uses a mock 1-second delay
-/// and always routes to login; Step 6 will replace the mock check
-/// with FirebaseAuth.instance.authStateChanges().
-class SplashScreen extends StatefulWidget {
+/// Shown briefly on app start. AuthController's onInit() binds to
+/// FirebaseAuth's authStateChanges() stream and redirects automatically
+/// (see AuthController._handleAuthChange) — this screen just needs to
+/// exist as the initial route so there's something to redirect FROM.
+class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
-}
-
-class _SplashScreenState extends State<SplashScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _checkAuthAndRedirect();
-  }
-
-  Future<void> _checkAuthAndRedirect() async {
-    // TODO(step-6): replace with real FirebaseAuth check, e.g.:
-    // final user = FirebaseAuth.instance.currentUser;
-    // Get.offAllNamed(user != null ? AppRoutes.home : AppRoutes.login);
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    Get.offAllNamed(AppRoutes.login);
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // Ensures AuthController exists (and its stream binds) as soon as the
+    // app starts, even before the login screen's own binding would run.
+    Get.put(AuthController(), permanent: true);
+
     return const Scaffold(
       body: Center(
         child: Column(

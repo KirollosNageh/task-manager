@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../../../core/constants/app_spacing.dart';
-import '../../../../core/router/app_routes.dart';
 import '../../../../core/utils/validators.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_text_field.dart';
 import '../controllers/auth_controller.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _obscurePassword = true.obs;
 
   final AuthController _authController = Get.find<AuthController>();
@@ -26,13 +26,14 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
   void _submit() {
     _authController.clearError();
     if (_formKey.currentState!.validate()) {
-      _authController.login(
+      _authController.register(
         email: _emailController.text,
         password: _passwordController.text,
       );
@@ -42,6 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(title: const Text('Create Account')),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppSpacing.lg),
@@ -50,11 +52,10 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: AppSpacing.xxl),
-                Text('Welcome back', style: Theme.of(context).textTheme.headlineMedium),
+                Text('Create your account', style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: AppSpacing.xs),
                 Text(
-                  'Log in to manage your tasks',
+                  'Start organizing your tasks today',
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const SizedBox(height: AppSpacing.xl),
@@ -71,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Obx(() => AppTextField(
                       controller: _passwordController,
                       label: 'Password',
-                      hint: '••••••••',
+                      hint: 'At least 6 characters',
                       obscureText: _obscurePassword.value,
                       validator: Validators.password,
                       suffixIcon: IconButton(
@@ -82,16 +83,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             _obscurePassword.value = !_obscurePassword.value,
                       ),
                     )),
+                const SizedBox(height: AppSpacing.md),
 
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => Get.toNamed(AppRoutes.forgotPassword),
-                    child: const Text('Forgot password?'),
-                  ),
-                ),
+                Obx(() => AppTextField(
+                      controller: _confirmPasswordController,
+                      label: 'Confirm Password',
+                      hint: 'Re-enter your password',
+                      obscureText: _obscurePassword.value,
+                      validator: (value) => Validators.confirmPassword(
+                          value, _passwordController.text),
+                    )),
+                const SizedBox(height: AppSpacing.md),
 
-                // Firebase / validation error surfaced directly under the form.
                 Obx(() {
                   final error = _authController.errorMessage.value;
                   if (error == null) return const SizedBox.shrink();
@@ -104,9 +107,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   );
                 }),
 
-                const SizedBox(height: AppSpacing.sm),
                 Obx(() => AppButton(
-                      label: 'Log In',
+                      label: 'Sign Up',
                       isLoading: _authController.isLoading.value,
                       onPressed: _submit,
                     )),
@@ -114,8 +116,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: AppSpacing.lg),
                 Center(
                   child: TextButton(
-                    onPressed: () => Get.toNamed(AppRoutes.register),
-                    child: const Text("Don't have an account? Sign up"),
+                    onPressed: () => Get.back(),
+                    child: const Text('Already have an account? Log in'),
                   ),
                 ),
               ],
