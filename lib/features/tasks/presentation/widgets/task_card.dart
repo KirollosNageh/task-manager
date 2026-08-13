@@ -79,16 +79,23 @@ class TaskCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        task.title,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              decoration: task.isCompleted
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                              color: task.isCompleted
-                                  ? Theme.of(context).colorScheme.outline
-                                  : null,
-                            ),
+                      // Animates the strikethrough + dimming smoothly
+                      // instead of the text style snapping instantly.
+                      AnimatedDefaultTextStyle(
+                        duration: const Duration(milliseconds: 200),
+                        style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
+                                ?.copyWith(
+                                  decoration: task.isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : TextDecoration.none,
+                                  color: task.isCompleted
+                                      ? Theme.of(context).colorScheme.outline
+                                      : Theme.of(context).textTheme.titleMedium?.color,
+                                ) ??
+                            const TextStyle(),
+                        child: Text(task.title),
                       ),
                       if (task.description.isNotEmpty) ...[
                         const SizedBox(height: 2),
@@ -102,7 +109,8 @@ class TaskCard extends StatelessWidget {
                       const SizedBox(height: AppSpacing.xs),
                       Row(
                         children: [
-                          Container(
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
