@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
+import '../../../../core/utils/due_date_formatter.dart';
 import '../../data/models/task_model.dart';
 
 /// Renders a single task row: title, description preview, due date,
@@ -131,9 +131,21 @@ class TaskCard extends StatelessWidget {
                           Icon(Icons.calendar_today_outlined,
                               size: 12, color: Theme.of(context).colorScheme.outline),
                           const SizedBox(width: 4),
-                          Text(
-                            DateFormat.MMMd().format(task.dueDate),
-                            style: Theme.of(context).textTheme.bodySmall,
+                          Expanded(
+                            child: Text(
+                              DueDateFormatter.format(task.dueDate),
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                    color: task.dueDate.isBefore(DateTime.now()) &&
+                                            !task.isCompleted
+                                        ? AppColors.error
+                                        : null,
+                                    fontWeight: task.dueDate.isBefore(DateTime.now()) &&
+                                            !task.isCompleted
+                                        ? FontWeight.w600
+                                        : null,
+                                  ),
+                            ),
                           ),
                         ],
                       ),

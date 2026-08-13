@@ -23,7 +23,10 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
   late final TextEditingController _titleController;
   late final TextEditingController _descriptionController;
 
+  // Due date and time are edited separately (two pickers) but combined
+  // into a single DateTime when saving — see _combinedDueDate.
   final _dueDate = Rxn<DateTime>();
+  final _dueTime = Rxn<TimeOfDay>();
   final _status = TaskStatus.pending.obs;
   final _isSaving = false.obs;
 
@@ -41,8 +44,12 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     _titleController = TextEditingController(text: _editingTask?.title ?? '');
     _descriptionController =
         TextEditingController(text: _editingTask?.description ?? '');
-    _dueDate.value = _editingTask?.dueDate ??
+
+    final initialDueDate = _editingTask?.dueDate ??
         DateTime.now().add(const Duration(days: 1));
+    _dueDate.value = initialDueDate;
+    _dueTime.value = TimeOfDay.fromDateTime(initialDueDate);
+
     _status.value = _editingTask?.status ?? TaskStatus.pending;
   }
 
@@ -51,6 +58,21 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  /// Merges the separately-picked date and time into one DateTime.
+  /// Falls back to 11:59 PM if the user picked a date but skipped the
+  /// time step, so a task never silently loses its due time.
+  DateTime? get _combinedDueDate {
+    if (_dueDate.value == null) return null;
+    final time = _dueTime.value ?? const TimeOfDay(hour: 23, minute: 59);
+    return DateTime(
+      _dueDate.value!.year,
+      _dueDate.value!.month,
+      _dueDate.value!.day,
+      time.hour,
+      time.minute,
+    );
   }
 
   Future<void> _pickDueDate() async {
@@ -63,9 +85,18 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
     if (picked != null) _dueDate.value = picked;
   }
 
+  Future<void> _pickDueTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _dueTime.value ?? TimeOfDay.now(),
+    );
+    if (picked != null) _dueTime.value = picked;
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_dueDate.value == null) {
+    final dueDate = _combinedDueDate;
+    if (dueDate == null) {
       Get.snackbar('Missing due date', 'Please select a due date.');
       return;
     }
@@ -77,7 +108,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
       final updated = _editingTask!.copyWith(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        dueDate: _dueDate.value,
+        dueDate: dueDate,
         status: _status.value,
       );
       success = await _taskController.updateTask(updated);
@@ -87,7 +118,7 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
         createdAt: DateTime.now(), // ignored on create — server timestamp used
-        dueDate: _dueDate.value!,
+        dueDate: dueDate,
         status: TaskStatus.pending,
       );
       success = await _taskController.addTask(newTask);
@@ -161,26 +192,82 @@ class _TaskFormScreenState extends State<TaskFormScreen> {
                 ),
                 const SizedBox(height: AppSpacing.md),
 
-                Text('Due Date', style: Theme.of(context).textTheme.labelLarge),
-                const SizedBox(height: AppSpacing.xs),
-                Obx(() => InkWell(
-                      onTap: _pickDueDate,
-                      borderRadius: BorderRadius.circular(AppSpacing.radiusMd),
-                      child: InputDecorator(
-                        decoration: const InputDecoration(),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.calendar_today_outlined, size: 18),
-                            const SizedBox(width: AppSpacing.sm),
-                            Text(
-                              _dueDate.value != null
-                                  ? DateFormat.yMMMd().format(_dueDate.value!)
-                                  : 'Select a date',
-                            ),
-                          ],
-                        ),
+                // Due Date + Due Time side by side — together they form
+                // the full due DateTime saved to Firestore.
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Due Date',
+                              style: Theme.of(context).textTheme.labelLarge),
+                          const SizedBox(height: AppSpacing.xs),
+                          Obx(() => InkWell(
+                                onTap: _pickDueDate,
+                                borderRadius:
+                                    BorderRadius.circular(AppSpacing.radiusMd),
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.calendar_today_outlined,
+                                          size: 18),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      Expanded(
+                                        child: Text(
+                                          _dueDate.value != null
+                                              ? DateFormat.yMMMd()
+                                                  .format(_dueDate.value!)
+                                              : 'Select date',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )),
+                        ],
                       ),
-                    )),
+                    ),
+                    const SizedBox(width: AppSpacing.sm),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Due Time',
+                              style: Theme.of(context).textTheme.labelLarge),
+                          const SizedBox(height: AppSpacing.xs),
+                          Obx(() => InkWell(
+                                onTap: _pickDueTime,
+                                borderRadius:
+                                    BorderRadius.circular(AppSpacing.radiusMd),
+                                child: InputDecorator(
+                                  decoration: const InputDecoration(),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.access_time_outlined,
+                                          size: 18),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      Expanded(
+                                        child: Text(
+                                          _dueTime.value != null
+                                              ? _dueTime.value!
+                                                  .format(context)
+                                              : 'Select time',
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
 
                 if (_isEditMode) ...[
                   const SizedBox(height: AppSpacing.md),
