@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import '../../../../core/errors/app_exception.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../data/repositories/auth_repository.dart';
 
 /// Holds ALL auth-related business logic and state. Screens read from
@@ -9,6 +10,7 @@ import '../../data/repositories/auth_repository.dart';
 /// on button presses — screens themselves contain zero Firebase logic.
 class AuthController extends GetxController {
   final AuthRepository _repository = AuthRepository();
+  final NotificationService _notificationService = NotificationService();
 
   final isLoading = false.obs;
   final errorMessage = RxnString();
@@ -31,6 +33,9 @@ class AuthController extends GetxController {
       Get.offAllNamed(AppRoutes.login);
     } else {
       Get.offAllNamed(AppRoutes.home);
+      // FCM only makes sense once we know which user to attach the token
+      // to, so it's initialized here rather than at raw app startup.
+      _notificationService.init();
     }
   }
 
