@@ -77,9 +77,10 @@ class TaskRepository {
     }
   }
 
-  Future<void> addTask(Task task) async {
+  Future<String> addTask(Task task) async {
     try {
-      await _tasksRef.add(task.toFirestoreCreate());
+      final docRef = await _tasksRef.add(task.toFirestoreCreate());
+      return docRef.id;
     } catch (_) {
       throw AppException('Could not add task. Please try again.');
     }

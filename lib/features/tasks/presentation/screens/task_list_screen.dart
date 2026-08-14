@@ -12,9 +12,30 @@ import '../../../../shared/widgets/empty_state_widget.dart';
 import '../../../../shared/widgets/error_state_widget.dart';
 import '../../../../shared/widgets/offline_banner.dart';
 import '../../../../shared/widgets/fade_slide_in.dart';
+import '../../../../shared/widgets/app_alert_dialog.dart';
 
 class TaskListScreen extends StatelessWidget {
   const TaskListScreen({super.key});
+
+  Future<void> _confirmLogout(BuildContext context, AuthController authController) async {
+    final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AppAlertDialog(
+            icon: Icons.logout_rounded,
+            title: 'Logout?',
+            message: 'Are you sure you want to logout?',
+            cancelText: 'Cancel',
+            confirmText: 'Logout',
+            onCancel: () => Navigator.pop(ctx, false),
+            onConfirm: () => Navigator.pop(ctx, true),
+          ),
+        ) ??
+        false;
+
+    if (confirmed) {
+      await authController.logout();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,14 +57,31 @@ class TaskListScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             tooltip: 'Logout',
-            onPressed: authController.logout,
+            onPressed: () => _confirmLogout(context, authController),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => Get.toNamed(AppRoutes.taskForm),
-        child: const Icon(Icons.add),
-      ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () => Get.toNamed(AppRoutes.taskForm),
+      //   child: const Icon(Icons.add),
+      // ),
+      floatingActionButton: SizedBox(
+  width: 60,
+  height: 60,
+  child: FloatingActionButton(
+    onPressed: () => Get.toNamed(AppRoutes.taskForm),
+    backgroundColor: Theme.of(context).colorScheme.primary,
+    foregroundColor: Colors.white,
+    elevation: 6,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(14),
+    ),
+    child: const Icon(
+      Icons.add,
+      size: 24,
+    ),
+  ),
+),
       body: Column(
         children: [
           // Offline indicator — only takes space when actually offline,

@@ -4,6 +4,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'core/services/notification_service.dart';
+import 'core/services/local_notification_service.dart';
 import 'app.dart';
 
 void main() async {
@@ -25,6 +26,11 @@ void main() async {
   // top-level function — this is what lets FCM wake the app to process
   // messages while it's backgrounded or fully killed.
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+
+  // Independent of login state (unlike NotificationService/FCM, which
+  // needs a user id to attach a token to) — due-date reminders are purely
+  // on-device, so this can initialize immediately at startup.
+  await LocalNotificationService().init();
 
   runApp(const TaskManagerApp());
 }

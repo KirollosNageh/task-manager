@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:get/get.dart';
 import '../../../../core/errors/app_exception.dart';
+import '../../../../core/services/local_notification_service.dart';
 import '../../data/models/task_model.dart';
 import '../../data/repositories/task_repository.dart';
 
@@ -14,6 +15,7 @@ typedef StatusFilter = TaskStatus?;
 
 class TaskController extends GetxController {
   final TaskRepository _repository = TaskRepository();
+  final LocalNotificationService _reminderService = LocalNotificationService();
 
   /// How many tasks to load per "page". Kept small on purpose so the
   /// Load More / pagination behavior is easy to see and demo.
@@ -128,16 +130,62 @@ class TaskController extends GetxController {
     }
   }
 
-  Future<bool> addTask(Task task) => _mutate(() => _repository.addTask(task));
+  /// Creates the task, then schedules an on-device reminder for its due
+  /// date. Not routed through _mutate since we need the Firestore-assigned
+  /// id (only known after the write succeeds) to schedule the reminder.
+  Future<bool> addTask(Task task) async {
+    try {
+      final id = await _repository.addTask(task);
+      await _reminderService.scheduleTaskReminder(
+        id: id.hashCode,
+        taskTitle: task.title,
+        dueDate: task.dueDate,
+      );
+      return true;
+    } on AppException catch (e) {
+      Get.snackbar('Error', e.message);
+      return false;
+    }
+  }
 
-  Future<bool> updateTask(Task task) => _mutate(() => _repository.updateTask(task));
+  /// Updates the task, then keeps its reminder in sync: cancelled if the
+  /// task is now completed (no point reminding about a finished task),
+  /// otherwise rescheduled in case the due date/time changed.
+  Future<bool> updateTask(Task task) => _mutate(() async {
+        await _repository.updateTask(task);
+        if (task.isCompleted) {
+          await _reminderService.cancelTaskReminder(task.id.hashCode);
+        } else {
+          await _reminderService.scheduleTaskReminder(
+            id: task.id.hashCode,
+            taskTitle: task.title,
+            dueDate: task.dueDate,
+          );
+        }
+      });
 
-  Future<bool> deleteTask(String taskId) => _mutate(() => _repository.deleteTask(taskId));
+  Future<bool> deleteTask(String taskId) => _mutate(() async {
+        await _repository.deleteTask(taskId);
+        await _reminderService.cancelTaskReminder(taskId.hashCode);
+      });
 
   Future<bool> toggleStatus(Task task) {
     final newStatus =
         task.isCompleted ? TaskStatus.pending : TaskStatus.completed;
-    return _mutate(() => _repository.setStatus(task.id, newStatus));
+    return _mutate(() async {
+      await _repository.setStatus(task.id, newStatus);
+      if (newStatus == TaskStatus.completed) {
+        // Marking complete means the reminder is no longer relevant.
+        await _reminderService.cancelTaskReminder(task.id.hashCode);
+      } else {
+        // Reverted back to pending — restore the reminder for its due date.
+        await _reminderService.scheduleTaskReminder(
+          id: task.id.hashCode,
+          taskTitle: task.title,
+          dueDate: task.dueDate,
+        );
+      }
+    });
   }
 
   /// Wraps every write operation with consistent error surfacing so screens

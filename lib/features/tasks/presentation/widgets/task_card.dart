@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/utils/due_date_formatter.dart';
+import '../../../../shared/widgets/app_alert_dialog.dart';
 import '../../data/models/task_model.dart';
 
 /// Renders a single task row: title, description preview, due date,
@@ -42,19 +43,15 @@ class TaskCard extends StatelessWidget {
       confirmDismiss: (_) async {
         return await showDialog<bool>(
               context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Delete task?'),
-                content: Text('Delete "${task.title}"? This cannot be undone.'),
-                actions: [
-                  TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel')),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: Text('Delete',
-                        style: TextStyle(color: Theme.of(context).colorScheme.error)),
-                  ),
-                ],
+              builder: (ctx) => AppAlertDialog(
+                icon: Icons.delete_outline_rounded,
+                title: 'Delete task?',
+                message: 'Delete "${task.title}"? This cannot be undone.',
+                cancelText: 'Cancel',
+                confirmText: 'Delete',
+                isDestructive: true,
+                onCancel: () => Navigator.pop(ctx, false),
+                onConfirm: () => Navigator.pop(ctx, true),
               ),
             ) ??
             false;
