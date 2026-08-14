@@ -17,8 +17,8 @@ State management is handled with **GetX** (controllers + reactive `.obs` state +
 ## Flutter Version
 
 ```
-Flutter 3.x (stable channel)
-Dart SDK >= 3.x
+Flutter 3.41.9 (stable channel)
+Dart SDK >= 3.11.5
 ```
 
 Run `flutter --version` after cloning to confirm the exact version used to build this project, and `flutter doctor` to verify your environment is ready.
